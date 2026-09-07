@@ -43,36 +43,89 @@ function dashboard(){
 }
 
 function kpi(l,n,t,ic){return `<div class="card kpi"><div class="kpi-top"><span>${l}</span><span class="kpi-icon">${ic}</span></div><div class="kpi-num">${n}</div><span class="trend">${t}</span></div>`}
+
 function renderCharts(){
   charts.threat?.destroy();
   charts.risk?.destroy();
   const scans = SM.state.scans || [];
   if(!scans.length) return;
 
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+
+  const colors = isDark ? {
+    threat: ["#FF477E", "#FF8A00", "#7542FF", "#FFB800", "#D4FF00"],
+    risk: ["#FF477E", "#FF8A00", "#FFB800", "#D4FF00"],
+    donutBorder: "#13141C",
+    text: "#7E8B9B",
+    grid: "rgba(255, 255, 255, 0.06)",
+    legend: "#A0AEC0"
+  } : {
+    threat: ["#FF5C5C", "#FF754C", "#6C5DD3", "#FFB017", "#00D2D3"],
+    risk: ["#FF5C5C", "#FF754C", "#FFB017", "#00D2D3"],
+    donutBorder: "#FFFFFF",
+    text: "#808191",
+    grid: "rgba(0, 0, 0, 0.05)",
+    legend: "#808191"
+  };
+
   const classLabels = ["PHISHING","MALWARE","BEC","SUSPICIOUS","LIKELY LEGITIMATE"];
   const classCounts = classLabels.map(label => scans.filter(x => String(x.classification||"").toUpperCase() === label).length);
   const riskLabels = ["CRITICAL","HIGH","MEDIUM","LOW"];
   const riskCounts = riskLabels.map(label => scans.filter(x => String(x.risk||"").toUpperCase() === label).length);
 
-  charts.threat = new Chart(document.getElementById("threatChart"),{
-    type:"bar",
-    data:{
-      labels:classLabels,
-      datasets:[{label:"Uploaded emails",data:classCounts,backgroundColor:["#f05252","#fb923c","#a78bfa","#facc15","#60a5fa"],borderWidth:0,borderRadius:4}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false}},
-      scales:{x:{grid:{display:false},ticks:{color:"#687b94",font:{size:8}}},y:{beginAtZero:true,grid:{color:"rgba(100,120,145,.08)"},ticks:{color:"#687b94",font:{size:8},precision:0}}}
-    }
-  });
+  const threatEl = document.getElementById("threatChart");
+  if(threatEl) {
+    charts.threat = new Chart(threatEl, {
+      type: "bar",
+      data: {
+        labels: classLabels,
+        datasets: [{
+          label: "Uploaded emails",
+          data: classCounts,
+          backgroundColor: colors.threat,
+          borderWidth: 0,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: colors.text, font: { size: 8 } } },
+          y: { beginAtZero: true, grid: { color: colors.grid }, ticks: { color: colors.text, font: { size: 8 }, precision: 0 } }
+        }
+      }
+    });
+  }
 
-  charts.risk = new Chart(document.getElementById("riskChart"),{
-    type:"doughnut",
-    data:{labels:riskLabels,datasets:[{data:riskCounts,backgroundColor:["#f05252","#fb923c","#facc15","#60a5fa"],borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{color:"#9aabc0",font:{size:9},boxWidth:10}}}}
-  });
+  const riskEl = document.getElementById("riskChart");
+  if(riskEl) {
+    charts.risk = new Chart(riskEl, {
+      type: "doughnut",
+      data: {
+        labels: riskLabels,
+        datasets: [{
+          data: riskCounts,
+          backgroundColor: colors.risk,
+          borderWidth: 2,
+          borderColor: colors.donutBorder
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+            labels: { color: colors.legend, font: { size: 9 }, boxWidth: 10 }
+          }
+        }
+      }
+    });
+  }
 }
+
 function chartOpts(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#94a7bd",font:{size:9},boxWidth:12}}},scales:{x:{grid:{color:"rgba(100,120,145,.08)"},ticks:{color:"#687b94",font:{size:8}}},y:{grid:{color:"rgba(100,120,145,.08)"},ticks:{color:"#687b94",font:{size:8}}}}}}
 
 function emailAnalysis(){view.innerHTML=shell("Email Threat Analysis","Upload and investigate suspicious email evidence.");view.innerHTML+=`<div class="two-col analysis-layout"><div class="card analysis-upload-card"><div class="upload" id="drop"><div class="upload-icon">⇧</div><h3>DROP .EML FILE HERE</h3><p>OR</p><button class="btn primary" id="browse">Browse Files</button><p>Supported format: .EML · Maximum size: 25 MB</p><input id="fileInput" type="file" accept=".eml" class="hidden"></div><div id="fileInfo" class="hidden"></div></div><div class="card">${cardHead("")}<div style="padding:15px"><div class="notice"></div><div style="margin-top:14px">${resultSummary()}</div></div></div></div><div class="card section-gap">${cardHead("HEADER FORENSICS")}<div class="auth-grid">${auth("SPF","PASS","pass")}${auth("DKIM","FAIL","fail")}${auth("DMARC","FAIL","fail")}</div><div class="email-meta">${meta("From","SBI Corporate Banking <alerts@sbi-corp-demo.test>")}${meta("To","finance@company-demo.test")}${meta("Subject","Urgent Corporate Invoice Verification Required")}${meta("Reply-To","verify@secure-banking-demo.test")}${meta("Return-Path","bounce@mailer-demo.test")}${meta("Message-ID","<20260831.204218@demo.test>")}</div></div><div class="card section-gap">${cardHead("RAW EMAIL HEADERS","<span class='badge low'></span>")}<details><summary style="padding:13px 15px;cursor:pointer;color:#9db0c5;font-size:10px">RAW EMAIL HEADERS</summary><pre class="code">Received: from mailer-demo.test (203.0.113.42) by mx.company-demo.test
@@ -131,7 +184,6 @@ function report(id) {
     </div>
   </div>`;
 
-  // Email Evidence
   html += `<div class="two-col">
     <div class="card">
       ${cardHead("EMAIL EVIDENCE")}
@@ -156,7 +208,6 @@ function report(id) {
     </div>
   </div>`;
 
-  // Observed Indicators
   html += `<div class="card section-gap">
     ${cardHead("OBSERVED INDICATORS")}
     <div class="email-meta" style="padding:0 15px 15px;">
@@ -167,7 +218,6 @@ function report(id) {
     </div>
   </div>`;
 
-  // ----- AI ASSESSMENT & REASONS (FIXED) -----
   html += `<div class="card section-gap">
     ${cardHead("AI ASSESSMENT & REASONS")}
     <div class="tactics" style="padding:10px 15px;">
@@ -177,7 +227,6 @@ function report(id) {
     </div>
   </div>`;
 
-  // Raw Headers
   html += `<div class="card section-gap">
     ${cardHead("RAW EMAIL HEADERS")}
     <details>
@@ -196,7 +245,6 @@ function report(id) {
     </div>`;
   }
 
-  // Evidence Locker
   html += `<div class="card section-gap">
     ${cardHead("EVIDENCE LOCKER")}
     <div class="email-meta" style="padding:0 15px 15px;">
@@ -211,7 +259,6 @@ function report(id) {
 
   view.innerHTML = html;
 
-  // Event handlers
   document.getElementById("take").onclick = () => modal(
     "TAKEDOWN NOTICE — DEMO DRAFT",
     `<div class="notice">DEMO DRAFT — NOT SENT</div>
@@ -249,7 +296,7 @@ function report(id) {
   bindCommon();
 }
 
-function svgNode(x,y,title,type){return `<g class="node-svg" onclick="toast('${title} selected')"><circle cx="${x}" cy="${y}" r="25" fill="#0d1d30" stroke="#22d3ee"/><text x="${x}" y="${y+3}" text-anchor="middle" fill="#22d3ee" font-size="9">${type}</text><text x="${x}" y="${y+43}" text-anchor="middle" fill="#9bb0c8" font-size="8">${title}</text></g>`}
+function svgNode(x,y,title,type){return `<g class="node-svg" onclick="toast('${title} selected')"><circle cx="${x}" cy="${y}" r="25"/><text class="node-type" x="${x}" y="${y+3}" text-anchor="middle" font-size="9">${type}</text><text class="node-title" x="${x}" y="${y+43}" text-anchor="middle" font-size="8">${title}</text></g>`}
 
 function simpleTable(title,sub,headers,rows,button){view.innerHTML=shell(title,sub);view.innerHTML+=`<div class="card">${cardHead(title.toUpperCase(),button?`<button class="btn primary" data-toast="${button}">${button}</button>`:"")}<div class="table-wrap"><table class="table"><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map((x,i)=>`<td>${(x==="HIGH"||x==="CRITICAL"||x==="MEDIUM"||x==="LOW"||x==="VERIFIED"||x==="FAIL")?badge(x):x}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>`;bindCommon()}
 
@@ -257,7 +304,6 @@ function threatIntel() {
   const scans = SM.state.scans || [];
   view.innerHTML = shell("Threat Intelligence", "IP, domain, URL and file-hash reputation intelligence aggregated from uploaded emails.");
 
-  // ---- Aggregate indicators ----
   const indicators = { IP: {}, DOMAIN: {}, URL: {}, 'FILE HASH': {} };
   const riskLevels = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
   const getScore = (risk) => riskLevels[risk] || 0;
@@ -288,7 +334,6 @@ function threatIntel() {
     if (scan.hash) addIndicator('FILE HASH', scan.hash);
   });
 
-  // ---- Convert to arrays ----
   const indicatorData = {};
   Object.keys(indicators).forEach(type => {
     indicatorData[type] = Object.entries(indicators[type]).map(([value, data]) => ({
@@ -302,7 +347,6 @@ function threatIntel() {
     }));
   });
 
-  // ---- Render UI ----
   view.innerHTML += `<div class="card section-gap">
     <div style="padding:10px;display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn primary" data-ti="IP">IP Intelligence</button>
@@ -329,7 +373,6 @@ function threatIntel() {
     </div>
   </div>`;
 
-  // ---- Helper: show modal with investigation list ----
   function showInvestigationModal(indicator, invIds) {
     if (!invIds || invIds.length === 0) {
       toast(`No investigations found for "${indicator}"`);
@@ -348,7 +391,6 @@ function threatIntel() {
     );
   }
 
-  // ---- Fill table ----
   const fillTable = (type) => {
     const rows = indicatorData[type] || [];
     const tbody = document.getElementById('tiRows');
@@ -366,7 +408,6 @@ function threatIntel() {
       </tr>
     `).join('') || `<tr><td colspan="7" class="muted" style="padding:25px;text-align:center">No ${type.toLowerCase()} indicators found in uploaded emails.</td></tr>`;
 
-    // ---- Attach investigate event directly ----
     tbody.querySelectorAll('.investigate-btn').forEach(btn => {
       btn.onclick = function(e) {
         e.preventDefault();
@@ -377,7 +418,6 @@ function threatIntel() {
     });
   };
 
-  // ---- Tab switching ----
   const tabs = document.querySelectorAll('[data-ti]');
   tabs.forEach(btn => {
     btn.onclick = () => {
@@ -387,23 +427,23 @@ function threatIntel() {
     };
   });
 
-  // ---- Initial load ----
   fillTable('IP');
-
-  // Ensure common bindings (for other toasts, switches) are applied
   bindCommon();
 }
 
 function geolocation(){view.innerHTML=shell("GeoLocation Intelligence","Approximate IP-associated geographic intelligence.");view.innerHTML+=`<div class="card">${cardHead("GLOBAL IP MAP")}<div class="map" style="height:500px"><div class="route" style="left:17%;top:48%;width:55%;transform:rotate(-8deg)"></div><div class="route" style="left:53%;top:48%;width:22%;transform:rotate(25deg)"></div><div class="node" style="left:16%;top:46%"></div><div class="node" style="left:70%;top:40%"></div><div class="node" style="left:74%;top:63%"></div><div class="node-label" style="left:13%;top:51%">OBSERVED NODE · 203.0.113.42</div><div class="node-label" style="left:67%;top:45%">MUMBAI · APPROXIMATE</div></div></div><div class="two-col section-gap"><div class="card">${cardHead("OBSERVED IP")}<div class="email-meta">${meta("IP","203.0.113.42")}${meta("Country","India")}${meta("Region","Maharashtra")}${meta("City","Mumbai")}${meta("ISP","DemoNet Communications")}${meta("ASN","AS12345")}</div></div><div class="card">${cardHead("NETWORK ATTRIBUTES")}<div class="email-meta">${meta("Hosting Provider","Example Cloud")}${meta("VPN","Unknown")}${meta("TOR","Possible")}${meta("Proxy","Detected")}</div><div class="notice" style="margin:0 14px 14px">IP geolocation provides approximate network-associated geographic information and does not establish an individual's physical location.</div></div></div>`}
-function infrastructure(){view.innerHTML=shell("Infrastructure Correlation","Correlate email, sender, domain, IP, URL and campaign entities.");view.innerHTML+=`<div class="two-col"><div class="card">${cardHead("INFRASTRUCTURE GRAPH")}<div class="graph"><svg viewBox="0 0 700 450">${svgNode(110,220,"Email","EMAIL")}${svgNode(280,120,"Sender","SENDER")}${svgNode(280,320,"Domain","DOMAIN")}${svgNode(470,120,"IP","IP")}${svgNode(470,320,"URL","URL")}${svgNode(620,220,"Campaign","CAMPAIGN")}<g stroke="#31516b" stroke-width="2"><line x1="135" y1="205" x2="255" y2="135"/><line x1="135" y1="235" x2="255" y2="305"/><line x1="305" y1="120" x2="445" y2="120"/><line x1="305" y1="320" x2="445" y2="320"/><line x1="495" y1="135" x2="595" y2="205"/><line x1="495" y1="305" x2="595" y2="235"/></g></svg></div></div><div class="card">${cardHead("SELECTED ENTITY","<span class='badge high'></span>")}<div class="entity-panel"><span class="muted" style="font-size:8px">TYPE</span><div>Domain</div><div class="entity-value">example-login.com</div><div class="rel-grid"><div class="rel"><b>2</b><span>IPs</span></div><div class="rel"><b>4</b><span>URLs</span></div><div class="rel"><b>3</b><span>Cases</span></div><div class="rel"><b>1</b><span>Campaign</span></div></div><div class="notice" style="margin-top:14px">Relationships are simulated demo correlations and are not real-world attribution.</div></div></div></div>`}
+function infrastructure(){view.innerHTML=shell("Infrastructure Correlation","Correlate email, sender, domain, IP, URL and campaign entities.");view.innerHTML+=`<div class="two-col"><div class="card">${cardHead("INFRASTRUCTURE GRAPH")}<div class="graph"><svg viewBox="0 0 700 450">${svgNode(110,220,"Email","EMAIL")}${svgNode(280,120,"Sender","SENDER")}${svgNode(280,320,"Domain","DOMAIN")}${svgNode(470,120,"IP","IP")}${svgNode(470,320,"URL","URL")}${svgNode(620,220,"Campaign","CAMPAIGN")}<g class="graph-connections" stroke-width="2"><line x1="135" y1="205" x2="255" y2="135"/><line x1="135" y1="235" x2="255" y2="305"/><line x1="305" y1="120" x2="445" y2="120"/><line x1="305" y1="320" x2="445" y2="320"/><line x1="495" y1="135" x2="595" y2="205"/><line x1="495" y1="305" x2="595" y2="235"/></g></svg></div></div><div class="card">${cardHead("SELECTED ENTITY","<span class='badge high'></span>")}<div class="entity-panel"><span class="muted" style="font-size:8px">TYPE</span><div>Domain</div><div class="entity-value">example-login.com</div><div class="rel-grid"><div class="rel"><b>2</b><span>IPs</span></div><div class="rel"><b>4</b><span>URLs</span></div><div class="rel"><b>3</b><span>Cases</span></div><div class="rel"><b>1</b><span>Campaign</span></div></div><div class="notice" style="margin-top:14px">Relationships are simulated demo correlations and are not real-world attribution.</div></div></div></div>`}
 function forensicReports(){view.innerHTML=shell("Forensic Reports","Generate, review and export investigation reports.",`<button class="btn primary" data-toast="PDF generation will be connected to the backend in the next development stage.">Generate Report</button>`);view.innerHTML+=`<div class="card">${cardHead("REPORT MANAGEMENT")}<div class="table-wrap"><table class="table"><thead><tr><th>REPORT ID</th><th>CASE ID</th><th>CLASSIFICATION</th><th>RISK</th><th>GENERATED</th><th>ANALYST</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody><tr><td>REPORT-12345</td><td>CASE-001</td><td>PHISHING / IMPERSONATION</td><td>${badge("CRITICAL")}</td><td>31 Aug 20:42</td><td>Security Analyst</td><td>READY</td><td><button class="btn" onclick="location.hash='report/12345'">Open</button></td></tr><tr><td>REPORT-12344</td><td>CASE-002</td><td>PHISHING</td><td>${badge("HIGH")}</td><td>31 Aug 20:18</td><td>Security Analyst</td><td>READY</td><td><button class="btn">Open</button></td></tr></tbody></table></div></div><div class="card section-gap">${cardHead("REPORT PREVIEW","<span class='badge low'></span>")}<div class="three-col" style="padding:15px">${["Case Information","Executive Summary","Email Information","AI Assessment","Header Analysis","IP Intelligence","GeoLocation","Threat Intelligence","Indicators of Compromise","Timeline","Evidence Integrity"].map(x=>`<div class="rel"><b>${x}</b><span>Included in report</span></div>`).join("")}</div><div style="padding:0 15px 15px"><button class="btn primary" data-toast="PDF generation will be connected to the backend in the next development stage.">Export PDF</button></div></div>`;bindCommon()}
-function evidence(){simpleTable("Evidence","Preserve evidence metadata and verify cryptographic integrity.",["EVIDENCE ID","CASE ID","SHA-256","TIMESTAMP","SQL","VERIFICATION","ACTION"],[["EV-001","CASE-001","9f4d7e2b...d1a93f","20:42:18","REGISTERED","VERIFIED","Verify"],["EV-002","CASE-002","a81e21c9...98f02d","20:18:04","REGISTERED","VERIFIED","Verify"],["EV-003","CASE-003","c7210ab1...4f19ac","19:55:40","PENDING","REVIEW","Register"]],"Register Evidence");}
+
+function evidence(){
+  simpleTable("Evidence","Preserve evidence metadata and verify cryptographic integrity.",["EVIDENCE ID","CASE ID","SHA-256","TIMESTAMP","SQL","VERIFICATION","ACTION"],[["EV-001","CASE-001","9f4d7e2b...d1a93f","20:42:18","REGISTERED","VERIFIED","Verify"],["EV-002","CASE-002","a81e21c9...98f02d","20:18:04","REGISTERED","VERIFIED","Verify"],["EV-003","CASE-003","c7210ab1...4f19ac","19:55:40","PENDING","REVIEW","Register"]],"Register Evidence");
+  view.innerHTML+=`<div class="card section-gap">${cardHead("AI BOT EMAIL VISIT — SCREENSHOT EVIDENCE","<span class='badge verified'></span>")}<div style="padding:15px"><div class="email-meta" style="padding:0 0 14px">${meta("Evidence ID","EV-001")}${meta("Case ID","CASE-001")}${meta("Visited By","AI Forensic Bot v1")}${meta("Captured At","2026-08-31 20:42:31 IST")}${meta("Target Sender","alerts@sbi-corp-demo.test")}${meta("Screenshot Hash","b7c1e9a4...f30d2c")}</div><div style="border:1px solid #23364f;border-radius:9px;overflow:hidden;background:#0a1524"><div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#0d1a2c;border-bottom:1px solid #1c2b40"><span style="width:9px;height:9px;border-radius:50%;background:#f05252;display:inline-block"></span><span style="width:9px;height:9px;border-radius:50%;background:#facc15;display:inline-block"></span><span style="width:9px;height:9px;border-radius:50%;background:#34d399;display:inline-block"></span><span style="margin-left:8px;font:9px 'JetBrains Mono';color:#7c8fa8">alerts@sbi-corp-demo.test — Sandboxed Inbox Preview</span></div><div style="padding:22px;background:#f7f9fc;color:#1d2735"><div style="font-size:11px;color:#8a94a3;margin-bottom:10px">From: <b style="color:#1d2735">SBI Corporate Banking Team</b> &lt;alerts@sbi-corp-demo.test&gt;</div><div style="font-size:13px;font-weight:700;margin-bottom:14px">Urgent Corporate Invoice Verification Required</div><p style="font-size:11px;line-height:1.7;margin:0 0 14px">Dear Finance Team,<br><br>Your SBI corporate banking invoice requires immediate verification.<br><br>Failure to complete the verification process within 2 hours may result in temporary suspension of your corporate payment account.</p><button disabled style="padding:9px 16px;background:#1769aa;color:#fff;border:0;border-radius:5px;font-size:10px">Verify Now</button></div></div><div class="notice" style="margin-top:12px">This screenshot is an automated, sandboxed AI-bot capture of the suspicious email content for evidentiary purposes. No live links were clicked and no external network connection was made by the analyst.</div></div></div>`;
+  bindCommon();
+}
+
 function alerts(){view.innerHTML=shell("Security Alerts","Triage, investigate and resolve simulated security alerts.");view.innerHTML+=`<div class="card"><div style="padding:13px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px"><select id="afSeverity" class="field"><option>All Severity</option><option>CRITICAL</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option></select><select id="afStatus" class="field"><option>All Status</option><option>OPEN</option><option>RESOLVED</option></select><select id="afType" class="field"><option>All Type</option><option>Header Forensics</option><option>Authentication</option><option>URL Analysis</option><option>GeoLocation</option><option>AI Assessment</option><option>Correlation</option></select><input id="afDate" class="field" type="date"></div><div class="table-wrap"><table class="table"><thead><tr><th>ALERT</th><th>SEVERITY</th><th>CASE</th><th>SOURCE</th><th>TIME</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody id="alertRows"></tbody></table></div></div>`;const data=demo.alerts.map((a,i)=>({a:a[0],sev:a[1],case:a[2],src:a[3],time:"20:"+(42-i*4),status:"OPEN",type:a[3]}));function fill(){const s=document.getElementById("afSeverity").value,st=document.getElementById("afStatus").value,t=document.getElementById("afType").value;document.getElementById("alertRows").innerHTML=data.filter(x=>(s==="All Severity"||x.sev===s)&&(st==="All Status"||x.status===st)&&(t==="All Type"||x.type===t)).map((x,i)=>`<tr><td>${x.a}</td><td>${badge(x.sev)}</td><td>${x.case}</td><td>${x.src}</td><td>${x.time}</td><td><span class="alert-status">${x.status}</span></td><td><button class="btn" onclick="location.hash='investigations/001'">Investigate</button> <button class="btn success" data-resolve="${i}">Mark Resolved</button></td></tr>`).join("");document.querySelectorAll("[data-resolve]").forEach(b=>b.onclick=()=>{const x=data[+b.dataset.resolve];x.status="RESOLVED";fill();toast("Alert marked resolved in demo mode.")})} ["afSeverity","afStatus","afType","afDate"].forEach(id=>document.getElementById(id).onchange=fill);fill();bindCommon()}
 function settings(){view.innerHTML=shell("Settings","Configure account, security, privacy, notifications, retention and system integrations.");view.innerHTML+=`<div class="two-col"><div class="card">${cardHead("ACCOUNT")}<div class="form-grid"><div class="field"><label>Display Name</label><input value="Security Analyst"></div><div class="field"><label>Role</label><input value="Analyst" disabled></div><div class="field full"><label>Organization</label><input value="AICTE Cyber Security Cell — Demo Environment"></div></div></div><div class="card">${cardHead("SECURITY")}<div class="toggle">Two-Factor Authentication <span class="switch on"></span></div><div class="toggle">Session Timeout <span class="muted">30 minutes</span></div><div class="toggle">Audit Logging <span class="switch on"></span></div><div class="toggle">Login Notifications <span class="switch on"></span></div></div></div><div class="two-col section-gap"><div class="card">${cardHead("PRIVACY & EVIDENCE RETENTION")}<div class="toggle">Data Masking <span class="switch on"></span></div><div class="toggle">Evidence Retention <select><option>90 Days</option><option>180 Days</option><option>365 Days</option></select></div><div class="toggle">PII Redaction <span class="switch on"></span></div></div><div class="card">${cardHead("NOTIFICATIONS")}<div class="toggle">Email Alerts <span class="switch on"></span></div><div class="toggle">Browser Alerts <span class="switch on"></span></div><div class="toggle">High Risk Alerts <span class="switch on"></span></div><div class="toggle">Campaign Alerts <span class="switch on"></span></div></div></div><div class="card section-gap">${cardHead("SYSTEM CONFIGURATION")}<div class="list"><div class="toggle">VirusTotal <span class="badge low">NOT CONNECTED</span></div><div class="toggle">AbuseIPDB <span class="badge low">NOT CONNECTED</span></div><div class="toggle">GeoIP <span class="badge low">NOT CONNECTED</span></div><div class="toggle">Blockchain <span class="badge medium">DEVELOPMENT MODE</span></div><div class="toggle">AI Engine <span class="badge low">DEMO ENGINE</span></div><div class="toggle">Email Parser <span class="badge low">DEMO PARSER</span></div></div></div><div class="card section-gap">${cardHead("SECURITY UX NOTICE")}<div style="padding:15px"><div class="notice">Emails are untrusted evidence. Do not open suspicious attachments or directly visit suspicious URLs. IP geolocation is approximate. AI results require analyst review. Threat intelligence depends on external providers. Blockchain provides tamper-evident integrity records, not proof of evidence authenticity.</div></div></div>`;bindCommon()}
 
-// ============================================================
-//  HELPER: getGeoForIP  (ADDED)
-// ============================================================
 function getGeoForIP(ip) {
   const map = {
     '203.0.113.42': { Country: 'India', Region: 'Maharashtra', City: 'Mumbai', ISP: 'DemoNet Communications', ASN: 'AS12345' },
@@ -413,9 +453,6 @@ function getGeoForIP(ip) {
   return map[ip] || { Country: 'Unknown', Region: '—', City: '—', ISP: '—', ASN: '—' };
 }
 
-// ============================================================
-//  UPDATED investigationDetail with "All Data" tab
-// ============================================================
 function investigationDetail() {
   const hashParts = location.hash.slice(1).split('/');
   const id = decodeURIComponent(hashParts[1] || '');
@@ -431,14 +468,12 @@ function investigationDetail() {
     return;
   }
 
-  // ---- Page header ----
   view.innerHTML = shell(
     d.id,
     `Risk ${Number(d.score || 0)}/100 · Classification ${SM.esc(d.classification || 'ANALYZED')} · Uploaded ${SM.esc(d.time || '—')}`,
     `<button class="btn" onclick="location.hash='email-analysis'">Back to Email Analysis</button>`
   );
 
-  // ---- Summary Card ----
   view.insertAdjacentHTML(
     'beforeend',
     `<div class="card section-gap"><div class="card-head"><span class="card-title">INVESTIGATION SUMMARY</span><span class="badge ${String(d.risk || 'LOW').toLowerCase()}">${SM.esc(d.risk || 'LOW')}</span></div>
@@ -452,7 +487,6 @@ function investigationDetail() {
     </div></div>`
   );
 
-  // ---- Tabs (added "All Data") ----
   const tabNames = [
     { key: 'overview', label: 'Overview' },
     { key: 'email-evidence', label: 'Email Evidence' },
@@ -463,7 +497,7 @@ function investigationDetail() {
     { key: 'timeline', label: 'Timeline' },
     { key: 'evidence', label: 'Evidence' },
     { key: 'report', label: 'Report' },
-    { key: 'all-data', label: 'All Data' }     // <-- new tab
+    { key: 'all-data', label: 'All Data' }
   ];
 
   let tabsHtml = `<div class="card section-gap investigation-detail-card"><div class="tabs" style="display:flex;gap:4px;padding:10px;border-bottom:1px solid var(--border);flex-wrap:wrap">`;
@@ -472,7 +506,6 @@ function investigationDetail() {
   });
   tabsHtml += `</div><div class="tab-content" style="padding:12px 16px;">`;
 
-  // ---- Panes (add "all-data" pane) ----
   const panes = {
     overview: () => `
       <div class="result-header" style="padding:0 0 12px 0;">
@@ -535,7 +568,7 @@ function investigationDetail() {
           ${svgNode(470,120,"IP","IP")}
           ${svgNode(470,320,"URL","URL")}
           ${svgNode(620,220,"Campaign","CAMPAIGN")}
-          <g stroke="#31516b" stroke-width="2">
+          <g class="graph-connections" stroke-width="2">
             <line x1="135" y1="205" x2="255" y2="135"/>
             <line x1="135" y1="235" x2="255" y2="305"/>
             <line x1="305" y1="120" x2="445" y2="120"/>
@@ -567,6 +600,7 @@ function investigationDetail() {
       </div>
       <div style="margin-top:12px;"><button class="btn success" onclick="toast('Evidence cryptographically verified — zero tampering detected.')">Verify Integrity</button></div>
       <div class="notice" style="margin-top:12px;">Blockchain provides tamper‑evident integrity records, not proof of evidence authenticity.</div>
+      <div class="card section-gap" style="margin-top:14px;">${cardHead("AI BOT EMAIL VISIT — SCREENSHOT EVIDENCE","<span class='badge verified'></span>")}<div style="padding:15px"><div class="email-meta" style="padding:0 0 14px">${meta("Evidence ID", SM.esc(d.id || "EV-001"))}${meta("Target Sender", SM.esc(d.from || "alerts@sbi-corp-demo.test"))}${meta("Screenshot Hash", SM.esc(d.hash ? d.hash.slice(0,16)+"...": "b7c1e9a4...f30d2c"))}</div><div style="border:1px solid #23364f;border-radius:9px;overflow:hidden;background:#0a1524"><div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:#0d1a2c;border-bottom:1px solid #1c2b40"><span style="width:9px;height:9px;border-radius:50%;background:#f05252;display:inline-block"></span><span style="width:9px;height:9px;border-radius:50%;background:#facc15;display:inline-block"></span><span style="width:9px;height:9px;border-radius:50%;background:#34d399;display:inline-block"></span><span style="margin-left:8px;font:9px 'JetBrains Mono';color:#7c8fa8">${SM.esc(d.from || "alerts@sbi-corp-demo.test")} — Sandboxed Inbox Preview</span></div><div style="padding:22px;background:#f7f9fc;color:#1d2735"><div style="font-size:11px;color:#8a94a3;margin-bottom:10px">From: <b style="color:#1d2735">${SM.esc(d.from || "SBI Corporate Banking Team")}</b></div><div style="font-size:13px;font-weight:700;margin-bottom:14px">${SM.esc(d.subject || "Urgent Corporate Invoice Verification Required")}</div><p style="font-size:11px;line-height:1.7;margin:0 0 14px">${SM.esc(d.subject || "Your corporate banking invoice requires immediate verification.")}<br><br>Automated sandboxed rendering of captured evidence.</p><button disabled style="padding:9px 16px;background:#1769aa;color:#fff;border:0;border-radius:5px;font-size:10px">Verify Now</button></div></div><div class="notice" style="margin-top:12px">This screenshot is an automated, sandboxed AI-bot capture of the suspicious email content for evidentiary purposes.</div></div></div>
     `,
     report: () => `
       <div class="three-col" style="padding:0;">
@@ -578,7 +612,6 @@ function investigationDetail() {
       </div>
     `,
     'all-data': () => {
-      // Exclude raw and rawFull from the main list to display separately
       const exclude = ['raw', 'rawFull'];
       const fields = Object.keys(d).filter(k => !exclude.includes(k) && k !== 'rawFull');
       let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">`;
@@ -590,7 +623,6 @@ function investigationDetail() {
         html += `<div class="meta"><label>${SM.esc(key)}</label><span>${SM.esc(value)}</span></div>`;
       });
       html += `</div>`;
-      // Show raw headers and full raw email as collapsible blocks
       html += `<hr style="border-color:var(--border);margin:16px 0;">`;
       html += `<details><summary style="cursor:pointer;color:var(--cyan);font-weight:600;">📄 RAW HEADERS</summary><pre class="code" style="max-height:300px;overflow:auto;">${SM.esc(d.raw || '')}</pre></details>`;
       if (d.rawFull) {
@@ -600,7 +632,6 @@ function investigationDetail() {
     }
   };
 
-  // Assemble panes
   tabNames.forEach(t => {
     const content = panes[t.key] ? panes[t.key]() : `<div class="empty"><p>Tab content not implemented.</p></div>`;
     const active = t.key === 'overview' ? ' active' : '';
@@ -610,7 +641,6 @@ function investigationDetail() {
   tabsHtml += `</div></div>`;
   view.insertAdjacentHTML('beforeend', tabsHtml);
 
-  // ---- Tab switching ----
   const tabsContainer = document.querySelector('.investigation-detail-card');
   if (tabsContainer) {
     const btns = tabsContainer.querySelectorAll('.tabs .btn');
@@ -637,14 +667,40 @@ function investigationDetail() {
 }
 
 function render(){let hash=location.hash.slice(1)||"dashboard",parts=hash.split("/"),route=parts[0];document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("active",a.dataset.route===route));pageCrumb.textContent=(routes[route]||"FORENSIC REPORT").toUpperCase();document.getElementById("sidebar").classList.remove("open");if(route==="dashboard")dashboard();else if(route==="email-analysis")emailAnalysis();else if(route==="investigations"&&parts[1])investigationDetail();else if(route==="investigations")investigations();else if(route==="threat-intelligence")threatIntel();else if(route==="geolocation")geolocation();else if(route==="infrastructure")infrastructure();else if(route==="forensic-reports")forensicReports();else if(route==="evidence")evidence();else if(route==="alerts")alerts();else if(route==="settings")settings();else if(route==="report")report(parts[1]||"12345");else home()}
-window.addEventListener("hashchange",render);document.getElementById("menuBtn").onclick=()=>document.getElementById("sidebar").classList.toggle("open");document.getElementById("notifyBtn").onclick=()=>toast("No security alerts yet.");document.getElementById("globalSearch").onkeydown=e=>{if(e.key==="Enter"){const q=e.target.value.trim();if(q)toast(`No local match for “${q}”`)}};
+window.addEventListener("hashchange",render);document.getElementById("menuBtn").onclick=()=>document.getElementById("sidebar").classList.toggle("open");document.getElementById("globalSearch").onkeydown=e=>{if(e.key==="Enter"){const q=e.target.value.trim();if(q)toast(`No local match for “${q}”`)}};
 
-/* =========================================================
-   SENTINELMAIL FRONTEND UPGRADE
-   Vanilla HTML/CSS/JS only — no backend required.
-   The UI uses localStorage for demo persistence and performs
-   basic .EML inspection entirely in the browser.
-   ========================================================= */
+function initTheme() {
+  const savedTheme = localStorage.getItem("sentinelmail_theme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  updateThemeIcon(savedTheme);
+
+  const toggleBtn = document.getElementById("themeToggle");
+  if (toggleBtn) {
+    toggleBtn.onclick = () => {
+      const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+      const next = current === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("sentinelmail_theme", next);
+      updateThemeIcon(next);
+
+      const route = location.hash.slice(1).split('/')[0] || "dashboard";
+      if (route === "dashboard") {
+        renderCharts();
+      }
+
+      toast(`Switched to ${next} mode`);
+    };
+  }
+}
+
+function updateThemeIcon(theme) {
+  const toggleBtn = document.getElementById("themeToggle");
+  if (toggleBtn) {
+    toggleBtn.innerHTML = theme === "dark" ? "☀️" : "🌙";
+    toggleBtn.title = theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode";
+  }
+}
+
 const SM = {
   key: "sentinelmail_state_v2",
   state: JSON.parse(localStorage.getItem("sentinelmail_state_v2") || "null") || { scans: [], cases: [], settings: {} },
@@ -662,7 +718,6 @@ const SM = {
   },
   addr(v){ const m=String(v||"").match(/<([^>]+)>|([\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/); return m ? (m[1]||m[2]) : String(v||""); },
   domain(v){ const a=this.addr(v); return a.includes("@") ? a.split("@").pop().toLowerCase() : ""; },
-  // ----- UPDATED analyze: now stores rawFull -----
   analyze(raw, file, hash) {
     const { head, map } = this.headers(raw);
     const from = this.addr(map.from);
@@ -675,7 +730,6 @@ const SM = {
     const ips = [...new Set((raw.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g) || []))];
     const received = (map.received || "").split("\n").filter(Boolean);
 
-    // Authentication results
     const authResults = [...head.matchAll(/authentication-results:[^\n]*(?:\n[ \t]+[^\n]*)*/gi)].map(m => m[0]).join(" ");
     const authSource = authResults || head;
     const getAuth = (name) => {
@@ -686,7 +740,6 @@ const SM = {
     const dkim = getAuth("dkim");
     const dmarc = getAuth("dmarc");
 
-    // Scoring
     let score = 0, reasons = [];
     const add = (points, reason) => { score += points; reasons.push(reason); };
     if (spf === "FAIL" || spf === "SOFTFAIL") add(spf === "FAIL" ? 22 : 14, `SPF ${spf.toLowerCase()}`);
@@ -744,8 +797,8 @@ const SM = {
       risk,
       classification,
       reasons,
-      raw: head,           // only headers
-      rawFull: raw,        // entire email (headers + body)
+      raw: head,
+      rawFull: raw,
       suspiciousUrls
     };
   }
@@ -781,7 +834,6 @@ async function showFile(f){
   };
 }
 
-/* Make investigation history persistent and searchable. */
 const oldInvestigations=investigations;
 investigations=function(){
   const scans=SM.state.scans || [];
@@ -790,17 +842,14 @@ investigations=function(){
   function fill(){const q=(document.getElementById("caseSearch").value||"").toLowerCase(),r=document.getElementById("riskFilter").value;document.getElementById("caseRows").innerHTML=scans.filter(x=>(r==="All Risk"||x.risk===r)&&(!q||`${x.id} ${x.from} ${x.subject} ${x.fromDomain}`.toLowerCase().includes(q))).map(x=>`<tr><td>${SM.esc(x.id)}</td><td>${SM.esc(x.time)}</td><td>${SM.esc(x.from||"—")}</td><td>${SM.esc(x.subject||"—")}</td><td>${badge(x.classification||"ANALYZED")}</td><td>${x.score}%</td><td>${badge(x.risk)}</td><td><button class="btn" onclick="location.hash='investigations/${encodeURIComponent(x.id)}'">Open</button></td></tr>`).join("")||`<tr><td colspan="8" class="muted" style="padding:25px;text-align:center">No uploaded email investigations yet.</td></tr>`} document.getElementById("caseSearch").oninput=fill;document.getElementById("riskFilter").onchange=fill;fill();bindCommon();
 };
 
-/* Better global search: jump to a relevant section instead of a fake toast. */
 document.getElementById("globalSearch").onkeydown=e=>{if(e.key!=="Enter")return;const q=e.target.value.trim().toLowerCase();if(!q)return;const scan=SM.state.scans.find(x=>`${x.id} ${x.from} ${x.subject} ${x.fromDomain}`.toLowerCase().includes(q));if(scan){location.hash=`report/${encodeURIComponent(scan.id)}`;e.target.value="";return;}if(/ip|domain|url|threat/.test(q))location.hash="threat-intelligence";else if(/case|investigation/.test(q))location.hash="investigations";else toast(`No local match for “${q}”`)};
 
-/* Make reports print-ready. */
 const oldReport=report;
 report=function(id){ oldReport(id); setTimeout(()=>{document.querySelectorAll("[data-print-report]").forEach(b=>b.onclick=()=>window.print())},0); };
 
-/* Settings persistence. */
 const oldSettings=settings;
 settings=function(){oldSettings();setTimeout(()=>{document.querySelectorAll(".switch").forEach((s,i)=>{const k=`switch_${i}`;const saved=localStorage.getItem(k);if(saved!==null)s.classList.toggle("on",saved==="1");s.addEventListener("click",()=>localStorage.setItem(k,s.classList.contains("on")?"1":"0"));});},0)};
 
-/* Final initialization: SM must exist before the first render. */
+initTheme();
 if (!location.hash) location.hash = "dashboard";
 render();

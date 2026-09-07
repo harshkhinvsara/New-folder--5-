@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SentinelMail — Email Forensics Command Center</title>
+  <title>TraceX — Email Forensics Command Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,7 +20,7 @@
         <div class="brand-mark"><img src="4169c482-1585-4317-b3e9-d7f0111f34fe.png" alt="" class="logoimg"></div>
 
         <div>
-          <strong>SentinelMail</strong>
+          <strong>TraceX</strong>
           <span>Email Threat Intelligence</span>
         </div>
       </div>
@@ -107,12 +106,17 @@
         </button>
 
         <div class="crumb">
-          <span>SentinelMail</span>
+          <span>TraceX</span>
           <b>/</b>
           <strong id="pageCrumb">OVERVIEW</strong>
         </div>
 
         <div class="top-actions">
+
+          <!-- Dark/Light Mode Toggle placed to the left of the search bar -->
+          <button class="icon-btn" id="themeToggle" title="Toggle dark/light mode">
+            🌙
+          </button>
 
           <label class="search">
             <span>⌕</span>
@@ -123,11 +127,6 @@
             >
           </label>
 
-
-          <button class="icon-btn" id="notifyBtn">
-            ♢
-          </button>
-
           <div class="top-avatar">
             SA
           </div>
@@ -135,10 +134,6 @@
         </div>
 
       </header>
-
-
-  
-
 
       <section id="view"></section>
 
@@ -158,4 +153,3 @@
 
 </body>
 </html>
-```

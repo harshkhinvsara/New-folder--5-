@@ -1,0 +1,161 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SentinelMail — Email Forensics Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="app-shell">
+
+    <aside class="sidebar" id="sidebar">
+
+      <div class="brand">
+        <div class="brand-mark"><img src="4169c482-1585-4317-b3e9-d7f0111f34fe.png" alt="" class="logoimg"></div>
+
+        <div>
+          <strong>SentinelMail</strong>
+          <span>Email Threat Intelligence</span>
+        </div>
+      </div>
+
+      <nav id="nav">
+
+        <div class="nav-label">COMMAND CENTER</div>
+
+        <a href="#dashboard" data-route="dashboard">
+          <span>⌂</span> Overview
+        </a>
+
+        <a href="#email-analysis" data-route="email-analysis">
+          <span>✉</span> Email Analysis
+        </a>
+
+        <a href="#investigations" data-route="investigations">
+          <span>◎</span> Investigations
+        </a>
+
+        <a href="#threat-intelligence" data-route="threat-intelligence">
+          <span>◈</span> Threat Intelligence
+        </a>
+
+        <a href="#geolocation" data-route="geolocation">
+          <span>⌖</span> GeoLocation
+        </a>
+
+        <a href="#infrastructure" data-route="infrastructure">
+          <span>⌁</span> Infrastructure Graph
+        </a>
+
+        <a href="#forensic-reports" data-route="forensic-reports">
+          <span>▤</span> Forensic Reports
+        </a>
+
+        <a href="#evidence" data-route="evidence">
+          <span>⬡</span> Evidence
+        </a>
+
+        <a href="#alerts" data-route="alerts">
+          <span>⚠</span> Alerts
+          <b class="nav-badge">6</b>
+        </a>
+
+        <a href="#settings" data-route="settings">
+          <span>⚙</span> Settings
+        </a>
+
+      </nav>
+
+      <div class="sidebar-bottom">
+
+        <div class="system-card">
+          <small>SYSTEM STATUS</small>
+
+          <div>
+            <i class="dot green"></i>
+            ALL SYSTEMS OPERATIONAL
+          </div>
+        </div>
+
+        <div class="analyst">
+          <div class="avatar">SA</div>
+
+          <div>
+            <strong>Security Analyst</strong>
+            <span>Analyst</span>
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
+
+
+    <main class="main">
+
+      <header class="topbar">
+
+        <button class="icon-btn mobile-only" id="menuBtn">
+          ☰
+        </button>
+
+        <div class="crumb">
+          <span>SentinelMail</span>
+          <b>/</b>
+          <strong id="pageCrumb">OVERVIEW</strong>
+        </div>
+
+        <div class="top-actions">
+
+          <label class="search">
+            <span>⌕</span>
+
+            <input
+              id="globalSearch"
+              placeholder="Search investigations, IPs, domains..."
+            >
+          </label>
+
+
+          <button class="icon-btn" id="notifyBtn">
+            ♢
+          </button>
+
+          <div class="top-avatar">
+            SA
+          </div>
+
+        </div>
+
+      </header>
+
+
+  
+
+
+      <section id="view"></section>
+
+    </main>
+
+  </div>
+
+
+  <div id="modalRoot"></div>
+
+  <div id="toastRoot"></div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
+```
